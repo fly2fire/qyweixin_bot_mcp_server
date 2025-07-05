@@ -66,81 +66,234 @@ def qyweixin_get_message_format(message_type: str) -> Dict[str, Any]:
     # 基础格式信息
     format_info = {
         "type": message_type,
-        "name": f"{message_type}消息",
-        "description": f"发送{message_type}格式消息",
-        "required_params": [],
-        "optional_params": [],
-        "limitations": []
+        "webhook_url": f"https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key={{YOUR_KEY}}",
+        "http_method": "POST",
+        "content_type": "application/json"
     }
     
-    # 根据消息类型设置详细信息
+    # 根据消息类型设置详细JSON格式
     if message_type == "text":
         format_info.update({
             "name": "文本消息",
             "description": "纯文本消息，支持@用户、换行、超链接",
-            "required_params": ["content"],
-            "optional_params": ["mentioned_list", "mentioned_mobile_list"],
-            "limitations": ["最长2048字节", "支持换行符", "支持@用户功能"]
+            "json_format": {
+                "msgtype": "text",
+                "text": {
+                    "content": "消息内容，支持换行\\n和@用户",
+                    "mentioned_list": ["@all"] or ["userid1", "userid2"],  # 可选
+                    "mentioned_mobile_list": ["13800001111", "13800002222"]  # 可选
+                }
+            },
+            "required_fields": ["msgtype", "text.content"],
+            "optional_fields": ["text.mentioned_list", "text.mentioned_mobile_list"],
+            "limitations": {
+                "max_length": "2048字节",
+                "features": ["支持换行符", "支持@用户功能", "支持超链接"]
+            }
         })
+    
     elif message_type == "markdown":
         format_info.update({
             "name": "Markdown消息",
             "description": "支持基础markdown语法的格式化消息",
-            "required_params": ["content"],
-            "optional_params": [],
-            "limitations": ["最长4096字节", "支持基础markdown语法", "支持有限的字体颜色"]
+            "json_format": {
+                "msgtype": "markdown",
+                "markdown": {
+                    "content": "# 标题\\n**加粗**\\n*斜体*\\n[链接](http://example.com)\\n- 列表项\\n> 引用\\n```代码```"
+                }
+            },
+            "required_fields": ["msgtype", "markdown.content"],
+            "optional_fields": [],
+            "limitations": {
+                "max_length": "4096字节",
+                "supported_syntax": ["标题", "加粗", "斜体", "链接", "列表", "引用", "代码", "有限字体颜色"],
+                "color_support": ["info", "comment", "warning"]
+            }
         })
+    
     elif message_type == "markdown_v2":
         format_info.update({
             "name": "Markdown增强消息",
             "description": "支持表格、图片、代码块等增强功能的markdown消息",
-            "required_params": ["content"],
-            "optional_params": [],
-            "limitations": ["最长4096字节", "不支持字体颜色", "不支持@功能", "图片无法控制大小"]
+            "json_format": {
+                "msgtype": "markdown",
+                "markdown": {
+                    "content": "# 标题\\n**加粗**\\n![图片](http://example.com/image.jpg)\\n| 列1 | 列2 |\\n|-----|-----|\\n| 值1 | 值2 |\\n```python\\nprint('code')\\n```\\n---\\n分割线"
+                }
+            },
+            "required_fields": ["msgtype", "markdown.content"],
+            "optional_fields": [],
+            "limitations": {
+                "max_length": "4096字节",
+                "supported_syntax": ["标题", "字体样式", "列表", "引用", "链接", "图片", "分割线", "代码块", "表格"],
+                "not_supported": ["字体颜色", "@功能", "HTML标签"],
+                "image_control": "无法控制图片显示大小"
+            }
         })
+    
     elif message_type == "image":
         format_info.update({
             "name": "图片消息",
             "description": "支持URL、本地文件、base64编码的图片消息",
-            "required_params": [],
-            "optional_params": ["image_url", "image_path", "image_base64", "image_md5"],
-            "limitations": ["图片大小不超过2MB", "支持JPG、PNG、GIF等常见格式", "无法控制显示大小"]
+            "json_format": {
+                "msgtype": "image",
+                "image": {
+                    "base64": "图片base64编码",
+                    "md5": "图片md5值"
+                }
+            },
+            "required_fields": ["msgtype", "image.base64", "image.md5"],
+            "optional_fields": [],
+            "limitations": {
+                "max_size": "2MB",
+                "supported_formats": ["JPG", "PNG", "GIF", "BMP", "WEBP"],
+                "size_control": "无法控制显示大小",
+                "encoding": "需要base64编码和md5校验"
+            }
         })
+    
     elif message_type == "news":
         format_info.update({
             "name": "图文消息",
             "description": "支持多篇图文，可跳转链接的图文消息",
-            "required_params": ["articles"],
-            "optional_params": [],
-            "limitations": ["最多8篇文章", "title和url为必需字段", "建议图片尺寸大图1068×455，小图150×150"]
+            "json_format": {
+                "msgtype": "news",
+                "news": {
+                    "articles": [
+                        {
+                            "title": "标题，必需字段",
+                            "description": "描述，可选字段",
+                            "url": "跳转链接，必需字段",
+                            "picurl": "图片链接，可选字段"
+                        }
+                    ]
+                }
+            },
+            "required_fields": ["msgtype", "news.articles", "articles[].title", "articles[].url"],
+            "optional_fields": ["articles[].description", "articles[].picurl"],
+            "limitations": {
+                "max_articles": "8篇文章",
+                "title_length": "建议不超过64字节",
+                "description_length": "建议不超过512字节",
+                "image_size": "大图建议1068×455，小图建议150×150"
+            }
         })
+    
     elif message_type == "file":
         format_info.update({
             "name": "文件消息",
             "description": "支持自动上传文件获取media_id的文件消息",
-            "required_params": [],
-            "optional_params": ["file_path", "media_id"],
-            "limitations": ["文件大小不超过20MB", "支持各种文件格式", "上传后media_id有效期3天"]
+            "json_format": {
+                "msgtype": "file",
+                "file": {
+                    "media_id": "通过上传接口获取的media_id"
+                }
+            },
+            "required_fields": ["msgtype", "file.media_id"],
+            "optional_fields": [],
+            "upload_api": {
+                "url": "https://qyapi.weixin.qq.com/cgi-bin/webhook/upload_media?key={key}&type=file",
+                "method": "POST",
+                "form_data": "multipart/form-data"
+            },
+            "limitations": {
+                "max_size": "20MB",
+                "media_id_ttl": "3天",
+                "supported_formats": "各种文件格式"
+            }
         })
+    
     elif message_type == "voice":
         format_info.update({
             "name": "语音消息",
             "description": "支持AMR格式的语音文件消息",
-            "required_params": [],
-            "optional_params": ["voice_path", "media_id"],
-            "limitations": ["文件大小不超过2MB", "仅支持AMR格式", "上传后media_id有效期3天", "语音时长建议不超过60秒"]
+            "json_format": {
+                "msgtype": "voice",
+                "voice": {
+                    "media_id": "通过上传接口获取的media_id"
+                }
+            },
+            "required_fields": ["msgtype", "voice.media_id"],
+            "optional_fields": [],
+            "upload_api": {
+                "url": "https://qyapi.weixin.qq.com/cgi-bin/webhook/upload_media?key={key}&type=voice",
+                "method": "POST",
+                "form_data": "multipart/form-data"
+            },
+            "limitations": {
+                "max_size": "2MB",
+                "supported_format": "AMR",
+                "media_id_ttl": "3天",
+                "duration": "建议不超过60秒"
+            }
         })
+    
     elif message_type == "template_card":
         format_info.update({
             "name": "模板卡片消息",
             "description": "支持文本通知卡片和图文展示卡片的模板消息",
-            "required_params": ["card_type"],
-            "optional_params": [
-                "source", "action_menu", "task_id", "main_title", "emphasis_content", 
-                "sub_title_text", "horizontal_content_list", "jump_list", "card_action",
-                "card_image_url", "aspect_ratio", "image_text_area", "vertical_content_list", "action_list"
+            "json_format": {
+                "msgtype": "template_card",
+                "template_card": {
+                    "card_type": "text_notice 或 news_notice",
+                    "source": {
+                        "icon_url": "图标链接，可选",
+                        "desc": "来源描述，可选",
+                        "desc_color": "描述颜色，可选"
+                    },
+                    "action_menu": {
+                        "desc": "菜单描述，可选",
+                        "action_list": [
+                            {
+                                "text": "菜单项文本",
+                                "type": "菜单项类型"
+                            }
+                        ]
+                    },
+                    "task_id": "任务ID，可选",
+                    "main_title": {
+                        "title": "主标题，可选",
+                        "desc": "主标题描述，可选"
+                    },
+                    "emphasis_content": {
+                        "title": "强调内容标题，可选",
+                        "desc": "强调内容描述，可选"
+                    },
+                    "sub_title_text": "副标题文本，可选",
+                    "horizontal_content_list": [
+                        {
+                            "keyname": "属性名",
+                            "value": "属性值"
+                        }
+                    ],
+                    "jump_list": [
+                        {
+                            "type": "跳转类型",
+                            "title": "跳转标题",
+                            "url": "跳转链接"
+                        }
+                    ],
+                    "card_action": {
+                        "type": "卡片动作类型",
+                        "url": "动作链接"
+                    }
+                }
+            },
+            "card_types": {
+                "text_notice": "文本通知卡片",
+                "news_notice": "图文展示卡片（需要card_image_url）"
+            },
+            "required_fields": ["msgtype", "template_card.card_type"],
+            "optional_fields": [
+                "template_card.source", "template_card.action_menu", "template_card.task_id",
+                "template_card.main_title", "template_card.emphasis_content", "template_card.sub_title_text",
+                "template_card.horizontal_content_list", "template_card.jump_list", "template_card.card_action"
             ],
-            "limitations": ["card_type为必需参数", "不同卡片类型有不同的必需字段", "图片宽高比范围1.3-2.25", "标题建议不超过36个字节"]
+            "limitations": {
+                "title_length": "建议不超过36字节",
+                "aspect_ratio": "图片宽高比范围1.3-2.25",
+                "card_types": "支持text_notice和news_notice两种类型"
+            }
         })
     
     return format_info

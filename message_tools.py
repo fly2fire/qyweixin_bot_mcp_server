@@ -93,7 +93,7 @@ def qyweixin_markdown_v2(content: str) -> Dict[str, Any]:
     if len(content.encode('utf-8')) > MAX_MARKDOWN_LENGTH:
         raise ValueError(f"Markdown v2内容过长，最大支持{MAX_MARKDOWN_LENGTH}字节")
     
-    # 发送真正的markdown_v2类型消息
+    # 发送markdown_v2类型消息
     data = {
         "msgtype": "markdown_v2",
         "markdown_v2": {
