@@ -219,8 +219,18 @@ def hello_world():
         except Exception as e:
             self.log_result("图片消息base64编码", False, f"异常: {e}")
         
-        # 跳过网络图片测试，因为网络问题可能导致SSL错误
-        self.log_result("图片消息URL", True, f"跳过网络图片测试（避免SSL问题）", None)
+        # 测试用户提供的图片URL
+        try:
+            # 用户提供的图片URL
+            user_image_url = "https://mdn.alipayobjects.com/one_clip/afts/img/ARV_R4C8ygYAAAAATMAAAAgAoEACAQFr/original"
+            result = qyweixin_image(image_url=user_image_url)
+            success = result.get('errcode') == 0
+            self.log_result("图片消息用户URL", success, f"发送用户提供的图片URL", result)
+        except Exception as e:
+            self.log_result("图片消息用户URL", False, f"异常: {e}")
+        
+        # 保留原有的占位符URL测试（跳过）
+        self.log_result("图片消息占位符URL", True, f"跳过占位符URL测试（避免SSL问题）", None)
     
     def test_news_message(self):
         """测试图文消息"""
