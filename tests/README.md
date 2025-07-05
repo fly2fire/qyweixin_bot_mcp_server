@@ -14,6 +14,7 @@ tests/
 ├── test_news.py           # 图文消息测试
 ├── test_template_card.py  # 模板卡片消息测试
 ├── test_all.py            # 主测试集（运行所有测试）
+├── test_mcp_client.py     # MCP客户端完整功能测试
 └── README.md              # 本文档
 ```
 
@@ -50,6 +51,7 @@ python test_image.py          # 测试图片消息
 python test_news.py           # 测试图文消息
 python test_template_card.py  # 测试模板卡片消息
 python test_utils.py          # 测试工具函数
+python test_mcp_client.py     # 测试MCP客户端完整功能
 ```
 
 ## 📋 测试覆盖范围
@@ -94,6 +96,14 @@ python test_utils.py          # 测试工具函数
 - 消息格式查询
 - 上传功能测试（如果支持）
 
+### MCP客户端测试
+- MCP服务器连接测试
+- 工具列表发现测试
+- 所有8种消息类型端到端测试
+- 辅助工具函数调用测试
+- 错误处理和异常测试
+- 完整的客户端-服务器通信验证
+
 ## 🔧 配置要求
 
 ### 环境变量
@@ -104,6 +114,8 @@ python test_utils.py          # 测试工具函数
 - `base64`: Base64编码库
 - `hashlib`: 哈希计算库
 - `json`: JSON处理库
+- `mcp`: MCP协议客户端库（用于test_mcp_client.py）
+- `fastmcp`: FastMCP服务器库（用于test_mcp_client.py）
 
 ## 📊 测试结果示例
 
@@ -118,12 +130,13 @@ python test_utils.py          # 测试工具函数
    5. 图文消息测试 (test_news.py)
    6. 模板卡片消息测试 (test_template_card.py)
    7. 工具函数测试 (test_utils.py)
+   8. MCP客户端测试 (test_mcp_client.py)
 
 ============================================================
 📊 测试总结
 ============================================================
-⏱️  总用时: 45.32秒
-📈 通过率: 7/7 (100.0%)
+⏱️  总用时: 65.48秒
+📈 通过率: 8/8 (100.0%)
 
 📋 详细结果:
    ✅ 文本消息测试
@@ -133,6 +146,7 @@ python test_utils.py          # 测试工具函数
    ✅ 图文消息测试
    ✅ 模板卡片消息测试
    ✅ 工具函数测试
+   ✅ MCP客户端测试
 
 🎉 所有测试通过！
 ```
@@ -169,6 +183,8 @@ python test_utils.py          # 测试工具函数
 2. **数据隐私**: 测试数据不包含敏感信息
 3. **网络依赖**: 图片测试需要网络连接
 4. **环境隔离**: 建议在测试环境中运行，避免影响生产环境
+5. **MCP客户端测试**: `test_mcp_client.py` 需要在虚拟环境中运行，确保已安装MCP相关依赖
+6. **环境变量**: MCP客户端测试使用 `key` 环境变量，其他测试使用 `QYWEIXIN_KEY`
 
 ## 🤝 贡献指南
 
