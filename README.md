@@ -166,3 +166,22 @@ MIT License
 ## 联系方式
 
 如有问题请通过 GitHub Issues 联系。
+
+## 🧪 单元测试
+
+项目包含完整的单元测试用于验证所有消息类型和辅助工具函数的功能。
+
+### 运行测试
+
+```bash
+python test_all_messages.py
+```
+
+### 测试覆盖
+
+- ✅ 8种消息类型测试（text、markdown、markdown_v2、image、news、file、voice、template_card）
+- ✅ 辅助工具函数测试（消息类型列表、格式查询、文件上传）
+- ✅ 边界条件测试（长度限制、空内容等）
+- ✅ 错误处理测试（异常捕获、参数验证等）
+
+测试结果：**26项测试，100%通过率**
