@@ -17,158 +17,117 @@ key = os.environ.get("key")
 webhook_url = f"https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key={key}"
 
 
-@mcp.tool(name="qyweixin_notice", description="Enterprise WeChat robot notification, send messages to group chats through the enterprise WeChat robot.")
-def qyweixin_notice(
-    msg: Annotated[str, Field(description="Message content text. For image type, this can be an image URL address or the local full path of the image. For file/voice type, this can be a file path (will auto-upload) or media_id. For template_card type, this will be used as main_title if main_title is not provided")],
-    msgtype: Annotated[str, Field(description="Message type, options: text, markdown, markdown_v2, image, file, voice, news, template_card, default is text. For image type, msg can be URL or local file path. For file/voice type, msg can be file path or media_id")] = "text",
-    mentioned_list: Annotated[Optional[List[str]], Field(description="Notify specific members in group (@someone), @all means notify everyone, only valid for text messages")] = None,
-    mentioned_mobile_list: Annotated[Optional[List[str]], Field(description="Notify specific members in group by mobile number (@someone), @all means notify everyone, only valid for text messages")] = None,
-    # News message parameters
-    title: Annotated[Optional[str], Field(description="Article title, required for news type")] = None,
-    description: Annotated[Optional[str], Field(description="Article description, optional for news type")] = None,
-    url: Annotated[Optional[str], Field(description="Article URL, required for news type")] = None,
-    picurl: Annotated[Optional[str], Field(description="Article picture URL, optional for news type")] = None,
-    # Template card parameters
-    card_type: Annotated[Optional[str], Field(description="Template card type: text_notice, news_notice, required for template_card type")] = None,
-    main_title: Annotated[Optional[str], Field(description="Main title for template card, required for template_card type")] = None,
-    main_title_desc: Annotated[Optional[str], Field(description="Main title description for template card, optional")] = None,
-    source_desc: Annotated[Optional[str], Field(description="Card source description, optional for template_card type")] = None,
-    source_icon_url: Annotated[Optional[str], Field(description="Card source icon URL, optional for template_card type")] = None,
-    card_action_type: Annotated[Optional[int], Field(description="Card action type: 1=jump to URL, 2=jump to mini program, required for template_card type")] = None,
-    card_action_url: Annotated[Optional[str], Field(description="Card action URL, required when card_action_type=1")] = None,
-    # For news_notice type
-    card_image_url: Annotated[Optional[str], Field(description="Card image URL, required for news_notice type")] = None,
-    card_image_aspect_ratio: Annotated[Optional[float], Field(description="Card image aspect ratio, optional for news_notice type")] = None,
-    # For text_notice type
-    sub_title_text: Annotated[Optional[str], Field(description="Sub title text, optional for text_notice type")] = None,
-    emphasis_title: Annotated[Optional[str], Field(description="Emphasis content title, optional for text_notice type")] = None,
-    emphasis_desc: Annotated[Optional[str], Field(description="Emphasis content description, optional for text_notice type")] = None,
-    ctx: Context = None):
-    """
-    Enterprise WeChat robot notification, send messages to group chats through the enterprise WeChat robot.
+@mcp.tool(name="qyweixin_text", description="Send text message to Enterprise WeChat group.")
+def qyweixin_text(
+    content: Annotated[str, Field(description="Text message content")],
+    mentioned_list: Annotated[Optional[List[str]], Field(description="List of users to mention (@someone), @all means mention everyone")] = None,
+    mentioned_mobile_list: Annotated[Optional[List[str]], Field(description="List of mobile numbers to mention (@someone), @all means mention everyone")] = None,
+    ctx: Context = None
+) -> Dict[str, Any]:
+    """Send text message to Enterprise WeChat group."""
+    
+    payload = {
+        "msgtype": "text",
+        "text": {
+            "content": content
+        }
+    }
+    
+    if mentioned_list:
+        payload["text"]["mentioned_list"] = mentioned_list
+    if mentioned_mobile_list:
+        payload["text"]["mentioned_mobile_list"] = mentioned_mobile_list
+    
+    return _send_message(payload)
 
-    Args:
-        msg (str): Message content text. For image type, this can be an image URL address or the local full path of the image. For file type, this should be the file path. For voice type, this should be the file path.
-        msgtype (str): Message type, options: text, markdown, markdown_v2, image, file, voice, news, template_card, default is text. When the message type is an image, it can be an image URL address or the local full path of the image. When the message type is file or voice, msg should be the file path
-        mentioned_list (List[str], optional): Notify specific members in group (@someone), @all means notify everyone, only valid for text messages
-        mentioned_mobile_list (List[str], optional): Notify specific members in group by mobile number (@someone), @all means notify everyone, only valid for text messages
-        title (str, optional): Article title, required for news type
-        description (str, optional): Article description, optional for news type
-        url (str, optional): Article URL, required for news type
-        picurl (str, optional): Article picture URL, optional for news type
-        card_type (str, optional): Template card type: text_notice, news_notice, required for template_card type
-        main_title (str, optional): Main title for template card, required for template_card type
-        main_title_desc (str, optional): Main title description for template card, optional
-        source_desc (str, optional): Card source description, optional for template_card type
-        source_icon_url (str, optional): Card source icon URL, optional for template_card type
-        card_action_type (int, optional): Card action type: 1=jump to URL, 2=jump to mini program, required for template_card type
-        card_action_url (str, optional): Card action URL, required when card_action_type=1
-        card_image_url (str, optional): Card image URL, required for news_notice type
-        card_image_aspect_ratio (float, optional): Card image aspect ratio, optional for news_notice type
-        sub_title_text (str, optional): Sub title text, optional for text_notice type
-        emphasis_title (str, optional): Emphasis content title, optional for text_notice type
-        emphasis_desc (str, optional): Emphasis content description, optional for text_notice type
-        ctx (Context): Context
-    
-    Returns:
-        Dict[str, Any]: Return result
-    """
 
-    payload = {"msgtype": msgtype}
+@mcp.tool(name="qyweixin_markdown", description="Send markdown message to Enterprise WeChat group.")
+def qyweixin_markdown(
+    content: Annotated[str, Field(description="Markdown format message content")],
+    ctx: Context = None
+) -> Dict[str, Any]:
+    """Send markdown message to Enterprise WeChat group."""
     
-    if msgtype == "text":
-        payload["text"] = {
-            "content": msg
+    payload = {
+        "msgtype": "markdown",
+        "markdown": {
+            "content": content
         }
-        if mentioned_list:
-            payload["text"]["mentioned_list"] = mentioned_list
-        if mentioned_mobile_list:
-            payload["text"]["mentioned_mobile_list"] = mentioned_mobile_list
+    }
     
-    elif msgtype == "markdown":
-        payload["markdown"] = {
-            "content": msg
+    return _send_message(payload)
+
+
+@mcp.tool(name="qyweixin_markdown_v2", description="Send enhanced markdown message to Enterprise WeChat group.")
+def qyweixin_markdown_v2(
+    content: Annotated[str, Field(description="Enhanced markdown format message content, supports tables, code blocks, images, etc.")],
+    ctx: Context = None
+) -> Dict[str, Any]:
+    """Send enhanced markdown message to Enterprise WeChat group."""
+    
+    payload = {
+        "msgtype": "markdown_v2",
+        "markdown_v2": {
+            "content": content
         }
+    }
     
-    elif msgtype == "markdown_v2":
-        payload["markdown_v2"] = {
-            "content": msg
-        }
+    return _send_message(payload)
+
+
+@mcp.tool(name="qyweixin_image", description="Send image message to Enterprise WeChat group.")
+def qyweixin_image(
+    image_path: Annotated[str, Field(description="Image URL or local file path")],
+    ctx: Context = None
+) -> Dict[str, Any]:
+    """Send image message to Enterprise WeChat group."""
     
-    elif msgtype == "image":
-        try:
-            # 处理URL图片
-            if urlparse(msg).scheme in ('http', 'https'):
-                response = requests.get(msg, timeout=10)
-                response.raise_for_status()
-                image_data = response.content
-            # 处理本地图片
-            else:
-                if not os.path.exists(msg):
-                    return {"errcode": -1, "errmsg": f"Image file not found: {msg}"}
-                with open(msg, "rb") as f:
-                    image_data = f.read()
-            
-            # 统一处理图片数据
-            base64_content = base64.b64encode(image_data).decode('utf-8')
-            md5_content = hashlib.md5(image_data).hexdigest()
-            
-            payload["image"] = {
+    try:
+        # 处理URL图片
+        if urlparse(image_path).scheme in ('http', 'https'):
+            response = requests.get(image_path, timeout=10)
+            response.raise_for_status()
+            image_data = response.content
+        # 处理本地图片
+        else:
+            if not os.path.exists(image_path):
+                return {"errcode": -1, "errmsg": f"Image file not found: {image_path}"}
+            with open(image_path, "rb") as f:
+                image_data = f.read()
+        
+        # 统一处理图片数据
+        base64_content = base64.b64encode(image_data).decode('utf-8')
+        md5_content = hashlib.md5(image_data).hexdigest()
+        
+        payload = {
+            "msgtype": "image",
+            "image": {
                 "base64": base64_content,
                 "md5": md5_content
             }
-        except requests.exceptions.RequestException as e:
-            return {"errcode": -1, "errmsg": f"Failed to download image from URL: {str(e)}"}
-        except Exception as e:
-            return {"errcode": -1, "errmsg": f"Image processing failed: {str(e)}"}
-    
-    elif msgtype == "file":
-        try:
-            # 检查msg是否为文件路径，如果是则上传文件获取media_id
-            if os.path.exists(msg):
-                # 上传文件获取media_id
-                upload_result = qyweixin_upload_media(msg, "file")
-                if upload_result.get("errcode") != 0:
-                    return upload_result
-                media_id = upload_result.get("media_id")
-                if not media_id:
-                    return {"errcode": -1, "errmsg": "Failed to get media_id from upload response"}
-            else:
-                # 假设msg已经是media_id
-                media_id = msg
-            
-            payload["file"] = {
-                "media_id": media_id
-            }
-        except Exception as e:
-            return {"errcode": -1, "errmsg": f"File processing failed: {str(e)}"}
-    
-    elif msgtype == "voice":
-        try:
-            # 检查msg是否为文件路径，如果是则上传文件获取media_id
-            if os.path.exists(msg):
-                # 上传文件获取media_id
-                upload_result = qyweixin_upload_media(msg, "voice")
-                if upload_result.get("errcode") != 0:
-                    return upload_result
-                media_id = upload_result.get("media_id")
-                if not media_id:
-                    return {"errcode": -1, "errmsg": "Failed to get media_id from upload response"}
-            else:
-                # 假设msg已经是media_id
-                media_id = msg
-            
-            payload["voice"] = {
-                "media_id": media_id
-            }
-        except Exception as e:
-            return {"errcode": -1, "errmsg": f"Voice processing failed: {str(e)}"}
-    
-    elif msgtype == "news":
-        if not title or not url:
-            return {"errcode": -1, "errmsg": "News type requires both title and url parameters"}
+        }
         
-        payload["news"] = {
+        return _send_message(payload)
+        
+    except requests.exceptions.RequestException as e:
+        return {"errcode": -1, "errmsg": f"Failed to download image from URL: {str(e)}"}
+    except Exception as e:
+        return {"errcode": -1, "errmsg": f"Image processing failed: {str(e)}"}
+
+
+@mcp.tool(name="qyweixin_news", description="Send news message to Enterprise WeChat group.")
+def qyweixin_news(
+    title: Annotated[str, Field(description="Article title")],
+    url: Annotated[str, Field(description="Article URL")],
+    description: Annotated[Optional[str], Field(description="Article description")] = None,
+    picurl: Annotated[Optional[str], Field(description="Article picture URL")] = None,
+    ctx: Context = None
+) -> Dict[str, Any]:
+    """Send news message to Enterprise WeChat group."""
+    
+    payload = {
+        "msgtype": "news",
+        "news": {
             "articles": [
                 {
                     "title": title,
@@ -178,85 +137,168 @@ def qyweixin_notice(
                 }
             ]
         }
+    }
     
-    elif msgtype == "template_card":
-        if not card_type:
-            return {"errcode": -1, "errmsg": "Template card type requires card_type parameter (text_notice or news_notice)"}
-        
-        # 使用main_title或msg作为主标题
-        title_text = main_title if main_title else msg
-        if not title_text:
-            return {"errcode": -1, "errmsg": "Template card requires main_title parameter or msg content"}
-        
-        if not card_action_type:
-            return {"errcode": -1, "errmsg": "Template card requires card_action_type parameter (1=URL, 2=mini program)"}
-        
-        # 构建基础结构
-        template_card = {
-            "card_type": card_type,
-            "main_title": {
-                "title": title_text
-            }
-        }
-        
-        # 添加主标题描述
-        if main_title_desc:
-            template_card["main_title"]["desc"] = main_title_desc
-        
-        # 添加来源信息
-        if source_desc or source_icon_url:
-            template_card["source"] = {}
-            if source_desc:
-                template_card["source"]["desc"] = source_desc
-            if source_icon_url:
-                template_card["source"]["icon_url"] = source_icon_url
-        
-        # 添加卡片动作（必需）
-        template_card["card_action"] = {
-            "type": card_action_type
-        }
-        if card_action_url:
-            template_card["card_action"]["url"] = card_action_url
-        
-        # 根据不同类型添加特定字段
-        if card_type == "text_notice":
-            # 文本通知型特有字段
-            if sub_title_text:
-                template_card["sub_title_text"] = sub_title_text
-            
-            if emphasis_title or emphasis_desc:
-                template_card["emphasis_content"] = {}
-                if emphasis_title:
-                    template_card["emphasis_content"]["title"] = emphasis_title
-                if emphasis_desc:
-                    template_card["emphasis_content"]["desc"] = emphasis_desc
-        
-        elif card_type == "news_notice":
-            # 图文展示型特有字段
-            if not card_image_url:
-                return {"errcode": -1, "errmsg": "news_notice type requires card_image_url parameter"}
-            
-            template_card["card_image"] = {
-                "url": card_image_url
-            }
-            if card_image_aspect_ratio:
-                template_card["card_image"]["aspect_ratio"] = card_image_aspect_ratio
-        
+    return _send_message(payload)
+
+
+@mcp.tool(name="qyweixin_file", description="Send file message to Enterprise WeChat group.")
+def qyweixin_file(
+    file_path: Annotated[str, Field(description="File path or media_id")],
+    ctx: Context = None
+) -> Dict[str, Any]:
+    """Send file message to Enterprise WeChat group."""
+    
+    try:
+        # 检查file_path是否为文件路径，如果是则上传文件获取media_id
+        if os.path.exists(file_path):
+            # 上传文件获取media_id
+            upload_result = qyweixin_upload_media(file_path, "file")
+            if upload_result.get("errcode") != 0:
+                return upload_result
+            media_id = upload_result.get("media_id")
+            if not media_id:
+                return {"errcode": -1, "errmsg": "Failed to get media_id from upload response"}
         else:
-            return {"errcode": -1, "errmsg": f"Invalid card_type: {card_type}. Must be 'text_notice' or 'news_notice'"}
+            # 假设file_path已经是media_id
+            media_id = file_path
         
-        payload["template_card"] = template_card
+        payload = {
+            "msgtype": "file",
+            "file": {
+                "media_id": media_id
+            }
+        }
+        
+        return _send_message(payload)
+        
+    except Exception as e:
+        return {"errcode": -1, "errmsg": f"File processing failed: {str(e)}"}
+
+
+@mcp.tool(name="qyweixin_voice", description="Send voice message to Enterprise WeChat group.")
+def qyweixin_voice(
+    voice_path: Annotated[str, Field(description="Voice file path (AMR format) or media_id")],
+    ctx: Context = None
+) -> Dict[str, Any]:
+    """Send voice message to Enterprise WeChat group."""
     
-    else:
-        return {"errcode": -1, "errmsg": f"Unsupported message type: {msgtype}. Supported types: text, markdown, markdown_v2, image, file, voice, news, template_card"}
+    try:
+        # 检查voice_path是否为文件路径，如果是则上传文件获取media_id
+        if os.path.exists(voice_path):
+            # 上传文件获取media_id
+            upload_result = qyweixin_upload_media(voice_path, "voice")
+            if upload_result.get("errcode") != 0:
+                return upload_result
+            media_id = upload_result.get("media_id")
+            if not media_id:
+                return {"errcode": -1, "errmsg": "Failed to get media_id from upload response"}
+        else:
+            # 假设voice_path已经是media_id
+            media_id = voice_path
+        
+        payload = {
+            "msgtype": "voice",
+            "voice": {
+                "media_id": media_id
+            }
+        }
+        
+        return _send_message(payload)
+        
+    except Exception as e:
+        return {"errcode": -1, "errmsg": f"Voice processing failed: {str(e)}"}
+
+
+@mcp.tool(name="qyweixin_template_card", description="Send template card message to Enterprise WeChat group.")
+def qyweixin_template_card(
+    card_type: Annotated[str, Field(description="Template card type: text_notice or news_notice")],
+    main_title: Annotated[str, Field(description="Main title for template card")],
+    card_action_type: Annotated[int, Field(description="Card action type: 1=jump to URL, 2=jump to mini program")],
+    card_action_url: Annotated[Optional[str], Field(description="Card action URL, required when card_action_type=1")] = None,
+    main_title_desc: Annotated[Optional[str], Field(description="Main title description for template card")] = None,
+    source_desc: Annotated[Optional[str], Field(description="Card source description")] = None,
+    source_icon_url: Annotated[Optional[str], Field(description="Card source icon URL")] = None,
+    # For news_notice type
+    card_image_url: Annotated[Optional[str], Field(description="Card image URL, required for news_notice type")] = None,
+    card_image_aspect_ratio: Annotated[Optional[float], Field(description="Card image aspect ratio, optional for news_notice type")] = None,
+    # For text_notice type
+    sub_title_text: Annotated[Optional[str], Field(description="Sub title text, optional for text_notice type")] = None,
+    emphasis_title: Annotated[Optional[str], Field(description="Emphasis content title, optional for text_notice type")] = None,
+    emphasis_desc: Annotated[Optional[str], Field(description="Emphasis content description, optional for text_notice type")] = None,
+    ctx: Context = None
+) -> Dict[str, Any]:
+    """Send template card message to Enterprise WeChat group."""
     
-    # 发送消息
+    if card_type not in ["text_notice", "news_notice"]:
+        return {"errcode": -1, "errmsg": "Invalid card_type. Must be 'text_notice' or 'news_notice'"}
+    
+    # 构建基础结构
+    template_card = {
+        "card_type": card_type,
+        "main_title": {
+            "title": main_title
+        }
+    }
+    
+    # 添加主标题描述
+    if main_title_desc:
+        template_card["main_title"]["desc"] = main_title_desc
+    
+    # 添加来源信息
+    if source_desc or source_icon_url:
+        template_card["source"] = {}
+        if source_desc:
+            template_card["source"]["desc"] = source_desc
+        if source_icon_url:
+            template_card["source"]["icon_url"] = source_icon_url
+    
+    # 添加卡片动作（必需）
+    template_card["card_action"] = {
+        "type": card_action_type
+    }
+    if card_action_url:
+        template_card["card_action"]["url"] = card_action_url
+    
+    # 根据不同类型添加特定字段
+    if card_type == "text_notice":
+        # 文本通知型特有字段
+        if sub_title_text:
+            template_card["sub_title_text"] = sub_title_text
+        
+        if emphasis_title or emphasis_desc:
+            template_card["emphasis_content"] = {}
+            if emphasis_title:
+                template_card["emphasis_content"]["title"] = emphasis_title
+            if emphasis_desc:
+                template_card["emphasis_content"]["desc"] = emphasis_desc
+    
+    elif card_type == "news_notice":
+        # 图文展示型特有字段
+        if not card_image_url:
+            return {"errcode": -1, "errmsg": "news_notice type requires card_image_url parameter"}
+        
+        template_card["card_image"] = {
+            "url": card_image_url
+        }
+        if card_image_aspect_ratio:
+            template_card["card_image"]["aspect_ratio"] = card_image_aspect_ratio
+    
+    payload = {
+        "msgtype": "template_card",
+        "template_card": template_card
+    }
+    
+    return _send_message(payload)
+
+
+def _send_message(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Send message to Enterprise WeChat group."""
     try:
         response = requests.post(
             webhook_url,
             json=payload,
             headers={'Content-Type': 'application/json; charset=utf-8'},
-            # headers={'Content-Type': 'application/json'},
             timeout=60
         )
         result = response.json()
@@ -265,6 +307,7 @@ def qyweixin_notice(
         return {"errcode": -1, "errmsg": f"Failed to send message: {str(e)}"}
     except json.JSONDecodeError as e:
         return {"errcode": -1, "errmsg": f"Invalid response from server: {str(e)}"}
+
 
 @mcp.tool(name="qyweixin_upload_media", description="Upload file or voice to Enterprise WeChat robot and get media_id.")
 def qyweixin_upload_media(
@@ -342,42 +385,50 @@ def qyweixin_list_message_types(ctx: Context = None) -> Dict[str, Any]:
         {
             "type": "text",
             "name": "文本消息",
-            "description": "支持 @用户、换行、超链接的纯文本消息"
+            "description": "支持 @用户、换行、超链接的纯文本消息",
+            "tool_name": "qyweixin_text"
         },
         {
             "type": "markdown",
             "name": "Markdown 消息",
-            "description": "支持基础 Markdown 语法的格式化消息"
+            "description": "支持基础 Markdown 语法的格式化消息",
+            "tool_name": "qyweixin_markdown"
         },
         {
             "type": "markdown_v2",
             "name": "增强 Markdown 消息",
-            "description": "支持表格、代码块、图片等增强功能的 Markdown 消息"
+            "description": "支持表格、代码块、图片等增强功能的 Markdown 消息",
+            "tool_name": "qyweixin_markdown_v2"
         },
         {
             "type": "image",
             "name": "图片消息",
-            "description": "支持 URL 链接、本地文件路径、base64 编码的图片消息"
+            "description": "支持 URL 链接、本地文件路径、base64 编码的图片消息",
+            "tool_name": "qyweixin_image"
         },
         {
             "type": "news",
             "name": "图文消息",
-            "description": "支持多图文，可跳转链接的图文消息"
+            "description": "支持多图文，可跳转链接的图文消息",
+            "tool_name": "qyweixin_news"
         },
         {
             "type": "file",
             "name": "文件消息",
-            "description": "支持自动上传文件获取 media_id 的文件消息"
+            "description": "支持自动上传文件获取 media_id 的文件消息",
+            "tool_name": "qyweixin_file"
         },
         {
             "type": "voice",
             "name": "语音消息",
-            "description": "支持 AMR 格式的语音文件消息"
+            "description": "支持 AMR 格式的语音文件消息",
+            "tool_name": "qyweixin_voice"
         },
         {
             "type": "template_card",
             "name": "模板卡片",
-            "description": "支持文本通知卡片和图文展示卡片的模板消息"
+            "description": "支持文本通知卡片和图文展示卡片的模板消息",
+            "tool_name": "qyweixin_template_card"
         }
     ]
     
@@ -409,19 +460,20 @@ def qyweixin_get_message_format(
             "type": "text",
             "name": "文本消息",
             "description": "纯文本消息，支持 @用户、换行、超链接",
-            "required_params": ["msg"],
+            "tool_name": "qyweixin_text",
+            "required_params": ["content"],
             "optional_params": ["mentioned_list", "mentioned_mobile_list"],
             "limits": {
                 "content_length": "最长 2048 字节",
                 "mentions": "支持 @用户和手机号"
             },
             "format": {
-                "msg": "消息内容文本",
+                "content": "消息内容文本",
                 "mentioned_list": "要@的用户列表，@all表示所有人",
                 "mentioned_mobile_list": "要@的手机号列表"
             },
             "example": {
-                "msg": "今天的会议将在下午2点开始",
+                "content": "今天的会议将在下午2点开始",
                 "mentioned_list": ["@all"]
             }
         },
@@ -429,57 +481,61 @@ def qyweixin_get_message_format(
             "type": "markdown",
             "name": "Markdown 消息",
             "description": "支持基础 Markdown 语法的格式化消息",
-            "required_params": ["msg"],
+            "tool_name": "qyweixin_markdown",
+            "required_params": ["content"],
             "optional_params": [],
             "limits": {
                 "content_length": "最长 4096 字节",
                 "syntax": "支持基础 Markdown 语法"
             },
             "format": {
-                "msg": "Markdown 格式的消息内容"
+                "content": "Markdown 格式的消息内容"
             },
             "example": {
-                "msg": "# 标题\n**加粗文本**\n- 列表项1\n- 列表项2"
+                "content": "# 标题\n**加粗文本**\n- 列表项1\n- 列表项2"
             }
         },
         "markdown_v2": {
             "type": "markdown_v2",
             "name": "增强 Markdown 消息",
             "description": "支持表格、代码块、图片等增强功能的 Markdown 消息",
-            "required_params": ["msg"],
+            "tool_name": "qyweixin_markdown_v2",
+            "required_params": ["content"],
             "optional_params": [],
             "limits": {
                 "content_length": "最长 4096 字节",
                 "syntax": "支持表格、代码块、图片、分割线等"
             },
             "format": {
-                "msg": "增强 Markdown 格式的消息内容"
+                "content": "增强 Markdown 格式的消息内容"
             },
             "example": {
-                "msg": "| 列1 | 列2 |\n|-----|-----|\n| 值1 | 值2 |\n```python\nprint('Hello')\n```"
+                "content": "| 列1 | 列2 |\n|-----|-----|\n| 值1 | 值2 |\n```python\nprint('Hello')\n```"
             }
         },
         "image": {
             "type": "image",
             "name": "图片消息",
             "description": "支持 URL 链接、本地文件路径、base64 编码的图片消息",
-            "required_params": ["msg"],
+            "tool_name": "qyweixin_image",
+            "required_params": ["image_path"],
             "optional_params": [],
             "limits": {
                 "file_size": "最大 2MB",
                 "formats": "支持 JPG、PNG、GIF 等常见格式"
             },
             "format": {
-                "msg": "图片 URL 链接或本地文件路径"
+                "image_path": "图片 URL 链接或本地文件路径"
             },
             "example": {
-                "msg": "https://example.com/image.jpg"
+                "image_path": "https://example.com/image.jpg"
             }
         },
         "news": {
             "type": "news",
             "name": "图文消息",
             "description": "支持多图文，可跳转链接的图文消息",
+            "tool_name": "qyweixin_news",
             "required_params": ["title", "url"],
             "optional_params": ["description", "picurl"],
             "limits": {
@@ -504,24 +560,26 @@ def qyweixin_get_message_format(
             "type": "file",
             "name": "文件消息",
             "description": "支持自动上传文件获取 media_id 的文件消息",
-            "required_params": ["msg"],
+            "tool_name": "qyweixin_file",
+            "required_params": ["file_path"],
             "optional_params": [],
             "limits": {
                 "file_size": "最大 20MB",
                 "formats": "支持各种文件格式"
             },
             "format": {
-                "msg": "文件路径或 media_id"
+                "file_path": "文件路径或 media_id"
             },
             "example": {
-                "msg": "/path/to/document.pdf"
+                "file_path": "/path/to/document.pdf"
             }
         },
         "voice": {
             "type": "voice",
             "name": "语音消息",
             "description": "支持 AMR 格式的语音文件消息",
-            "required_params": ["msg"],
+            "tool_name": "qyweixin_voice",
+            "required_params": ["voice_path"],
             "optional_params": [],
             "limits": {
                 "file_size": "最大 2MB",
@@ -529,16 +587,17 @@ def qyweixin_get_message_format(
                 "duration": "最长 60 秒"
             },
             "format": {
-                "msg": "AMR 格式语音文件路径或 media_id"
+                "voice_path": "AMR 格式语音文件路径或 media_id"
             },
             "example": {
-                "msg": "/path/to/voice.amr"
+                "voice_path": "/path/to/voice.amr"
             }
         },
         "template_card": {
             "type": "template_card",
             "name": "模板卡片",
             "description": "支持文本通知卡片和图文展示卡片的模板消息",
+            "tool_name": "qyweixin_template_card",
             "required_params": ["card_type", "main_title", "card_action_type"],
             "optional_params": [
                 "main_title_desc", "source_desc", "source_icon_url", "card_action_url",
@@ -593,10 +652,13 @@ def run_server():
     else:
         logger.info("Starting qyweixin bot MCP Server...")
         # test msg
-        # qyweixin_notice(msg="你好，这是一条测试消息", msgtype="text")
+        # qyweixin_text(content="你好，这是一条测试消息")
 
         logger.info("MCP server started and ready")
-        logger.info(f"Registered tools: qyweixin_notice, qyweixin_upload_media, qyweixin_list_message_types, qyweixin_get_message_format")
+        logger.info("Registered tools:")
+        logger.info("  - Message tools: qyweixin_text, qyweixin_markdown, qyweixin_markdown_v2, qyweixin_image")
+        logger.info("  - Message tools: qyweixin_news, qyweixin_file, qyweixin_voice, qyweixin_template_card")
+        logger.info("  - Utility tools: qyweixin_upload_media, qyweixin_list_message_types, qyweixin_get_message_format")
         mcp.run()
 
 
