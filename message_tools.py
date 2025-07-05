@@ -82,10 +82,10 @@ def qyweixin_markdown(content: str) -> Dict[str, Any]:
 
 def qyweixin_markdown_v2(content: str) -> Dict[str, Any]:
     """
-    发送Markdown增强消息
+    发送Markdown增强消息（注意：企业微信实际上并不支持markdown_v2类型，这里发送的是普通markdown）
     
     Args:
-        content: Markdown v2内容
+        content: Markdown v2内容（支持表格、图片、分割线、代码块等增强功能）
     
     Returns:
         Dict: 发送结果
@@ -93,8 +93,9 @@ def qyweixin_markdown_v2(content: str) -> Dict[str, Any]:
     if len(content.encode('utf-8')) > MAX_MARKDOWN_LENGTH:
         raise ValueError(f"Markdown v2内容过长，最大支持{MAX_MARKDOWN_LENGTH}字节")
     
+    # 实际发送的是普通markdown类型，因为企业微信不支持markdown_v2
     data = {
-        "msgtype": "markdown_v2",
+        "msgtype": "markdown",
         "markdown": {
             "content": content
         }

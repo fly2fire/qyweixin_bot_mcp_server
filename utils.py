@@ -47,14 +47,14 @@ def qyweixin_upload_media(file_path: str, media_type: str) -> str:
 def qyweixin_list_message_types() -> List[Dict[str, Any]]:
     """列出所有支持的消息类型及其说明"""
     return [
-        {"type": "text", "name": "文本消息", "description": "发送纯文本消息"},
-        {"type": "markdown", "name": "Markdown消息", "description": "发送markdown格式消息"},
-        {"type": "markdown_v2", "name": "Markdown增强消息", "description": "发送增强markdown消息"},
-        {"type": "image", "name": "图片消息", "description": "发送图片消息"},
-        {"type": "news", "name": "图文消息", "description": "发送图文消息"},
-        {"type": "file", "name": "文件消息", "description": "发送文件消息"},
-        {"type": "voice", "name": "语音消息", "description": "发送语音消息"},
-        {"type": "template_card", "name": "模板卡片消息", "description": "发送模板卡片消息"}
+        {"type": "text", "name": "文本消息", "description": "发送纯文本消息，支持@用户和@手机号"},
+        {"type": "markdown", "name": "Markdown消息", "description": "发送Markdown格式消息，支持基本的Markdown语法"},
+        {"type": "markdown_v2", "name": "Markdown增强消息", "description": "发送增强版Markdown消息（注意：实际发送的是普通markdown类型，企业微信不支持独立的markdown_v2类型）"},
+        {"type": "image", "name": "图片消息", "description": "发送图片消息，支持URL、本地文件、base64编码"},
+        {"type": "news", "name": "图文消息", "description": "发送图文消息，支持多篇文章"},
+        {"type": "file", "name": "文件消息", "description": "发送文件消息，支持本地文件上传"},
+        {"type": "voice", "name": "语音消息", "description": "发送语音消息，支持AMR格式"},
+        {"type": "template_card", "name": "模板卡片", "description": "发送模板卡片消息，支持文本通知和图文展示"}
     ]
 
 

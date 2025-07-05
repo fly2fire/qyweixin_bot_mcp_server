@@ -44,9 +44,9 @@ def tool_qyweixin_markdown(
     return qyweixin_markdown(content)
 
 
-@mcp.tool(name="qyweixin_markdown_v2", description="Send enhanced markdown message to Enterprise WeChat group.")
+@mcp.tool(name="qyweixin_markdown_v2", description="Send enhanced markdown message to Enterprise WeChat group (Note: Actually sends regular markdown type, as WeChat Work doesn't support standalone markdown_v2 type).")
 def tool_qyweixin_markdown_v2(
-    content: Annotated[str, Field(description="Enhanced markdown format message content, supports tables, code blocks, images, etc.")],
+    content: Annotated[str, Field(description="Enhanced markdown format message content, supports tables, code blocks, images, etc. (Note: Actually sends as regular markdown)")],
     ctx: Context = None
 ) -> Dict[str, Any]:
     """Send enhanced markdown message to Enterprise WeChat group."""

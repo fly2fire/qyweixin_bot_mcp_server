@@ -20,7 +20,7 @@
 |---------|------|------|
 | `text` | 文本消息 | 支持 @用户、换行、超链接 |
 | `markdown` | Markdown 消息 | 基础 Markdown 语法支持 |
-| `markdown_v2` | 增强 Markdown | 支持表格、代码块、图片等 |
+| `markdown_v2` | 增强 Markdown | 支持表格、代码块、图片等<br/>**注意：实际发送普通markdown类型** |
 | `image` | 图片消息 | 支持 URL、本地文件、base64 |
 | `news` | 图文消息 | 支持多图文，可跳转链接 |
 | `file` | 文件消息 | 自动上传文件获取 media_id |
