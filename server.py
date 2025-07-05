@@ -330,6 +330,255 @@ def qyweixin_upload_media(
     except Exception as e:
         return {"errcode": -1, "errmsg": f"Unexpected error: {str(e)}"}
 
+@mcp.tool(name="qyweixin_list_message_types", description="List all supported message types for Enterprise WeChat robot.")
+def qyweixin_list_message_types(ctx: Context = None) -> Dict[str, Any]:
+    """
+    List all supported message types for Enterprise WeChat robot.
+    
+    Returns:
+        dict: List of supported message types with brief descriptions
+    """
+    message_types = [
+        {
+            "type": "text",
+            "name": "文本消息",
+            "description": "支持 @用户、换行、超链接的纯文本消息"
+        },
+        {
+            "type": "markdown",
+            "name": "Markdown 消息",
+            "description": "支持基础 Markdown 语法的格式化消息"
+        },
+        {
+            "type": "markdown_v2",
+            "name": "增强 Markdown 消息",
+            "description": "支持表格、代码块、图片等增强功能的 Markdown 消息"
+        },
+        {
+            "type": "image",
+            "name": "图片消息",
+            "description": "支持 URL 链接、本地文件路径、base64 编码的图片消息"
+        },
+        {
+            "type": "news",
+            "name": "图文消息",
+            "description": "支持多图文，可跳转链接的图文消息"
+        },
+        {
+            "type": "file",
+            "name": "文件消息",
+            "description": "支持自动上传文件获取 media_id 的文件消息"
+        },
+        {
+            "type": "voice",
+            "name": "语音消息",
+            "description": "支持 AMR 格式的语音文件消息"
+        },
+        {
+            "type": "template_card",
+            "name": "模板卡片",
+            "description": "支持文本通知卡片和图文展示卡片的模板消息"
+        }
+    ]
+    
+    return {
+        "errcode": 0,
+        "errmsg": "ok",
+        "message_types": message_types,
+        "total_count": len(message_types)
+    }
+
+@mcp.tool(name="qyweixin_get_message_format", description="Get detailed format requirements for a specific message type.")
+def qyweixin_get_message_format(
+    message_type: Annotated[str, Field(description="Message type to query: text, markdown, markdown_v2, image, news, file, voice, template_card")],
+    ctx: Context = None
+) -> Dict[str, Any]:
+    """
+    Get detailed format requirements for a specific message type.
+    
+    Args:
+        message_type (str): Message type to query format requirements for
+        ctx (Context): Context
+    
+    Returns:
+        dict: Detailed format requirements for the specified message type
+    """
+    
+    formats = {
+        "text": {
+            "type": "text",
+            "name": "文本消息",
+            "description": "纯文本消息，支持 @用户、换行、超链接",
+            "required_params": ["msg"],
+            "optional_params": ["mentioned_list", "mentioned_mobile_list"],
+            "limits": {
+                "content_length": "最长 2048 字节",
+                "mentions": "支持 @用户和手机号"
+            },
+            "format": {
+                "msg": "消息内容文本",
+                "mentioned_list": "要@的用户列表，@all表示所有人",
+                "mentioned_mobile_list": "要@的手机号列表"
+            },
+            "example": {
+                "msg": "今天的会议将在下午2点开始",
+                "mentioned_list": ["@all"]
+            }
+        },
+        "markdown": {
+            "type": "markdown",
+            "name": "Markdown 消息",
+            "description": "支持基础 Markdown 语法的格式化消息",
+            "required_params": ["msg"],
+            "optional_params": [],
+            "limits": {
+                "content_length": "最长 4096 字节",
+                "syntax": "支持基础 Markdown 语法"
+            },
+            "format": {
+                "msg": "Markdown 格式的消息内容"
+            },
+            "example": {
+                "msg": "# 标题\n**加粗文本**\n- 列表项1\n- 列表项2"
+            }
+        },
+        "markdown_v2": {
+            "type": "markdown_v2",
+            "name": "增强 Markdown 消息",
+            "description": "支持表格、代码块、图片等增强功能的 Markdown 消息",
+            "required_params": ["msg"],
+            "optional_params": [],
+            "limits": {
+                "content_length": "最长 4096 字节",
+                "syntax": "支持表格、代码块、图片、分割线等"
+            },
+            "format": {
+                "msg": "增强 Markdown 格式的消息内容"
+            },
+            "example": {
+                "msg": "| 列1 | 列2 |\n|-----|-----|\n| 值1 | 值2 |\n```python\nprint('Hello')\n```"
+            }
+        },
+        "image": {
+            "type": "image",
+            "name": "图片消息",
+            "description": "支持 URL 链接、本地文件路径、base64 编码的图片消息",
+            "required_params": ["msg"],
+            "optional_params": [],
+            "limits": {
+                "file_size": "最大 2MB",
+                "formats": "支持 JPG、PNG、GIF 等常见格式"
+            },
+            "format": {
+                "msg": "图片 URL 链接或本地文件路径"
+            },
+            "example": {
+                "msg": "https://example.com/image.jpg"
+            }
+        },
+        "news": {
+            "type": "news",
+            "name": "图文消息",
+            "description": "支持多图文，可跳转链接的图文消息",
+            "required_params": ["title", "url"],
+            "optional_params": ["description", "picurl"],
+            "limits": {
+                "articles": "最多 8 篇图文",
+                "title_length": "标题最长 128 字节",
+                "description_length": "描述最长 512 字节"
+            },
+            "format": {
+                "title": "图文标题",
+                "url": "跳转链接",
+                "description": "图文描述（可选）",
+                "picurl": "图片链接（可选）"
+            },
+            "example": {
+                "title": "重要通知",
+                "url": "https://example.com",
+                "description": "请查看详细内容",
+                "picurl": "https://example.com/pic.jpg"
+            }
+        },
+        "file": {
+            "type": "file",
+            "name": "文件消息",
+            "description": "支持自动上传文件获取 media_id 的文件消息",
+            "required_params": ["msg"],
+            "optional_params": [],
+            "limits": {
+                "file_size": "最大 20MB",
+                "formats": "支持各种文件格式"
+            },
+            "format": {
+                "msg": "文件路径或 media_id"
+            },
+            "example": {
+                "msg": "/path/to/document.pdf"
+            }
+        },
+        "voice": {
+            "type": "voice",
+            "name": "语音消息",
+            "description": "支持 AMR 格式的语音文件消息",
+            "required_params": ["msg"],
+            "optional_params": [],
+            "limits": {
+                "file_size": "最大 2MB",
+                "formats": "仅支持 AMR 格式",
+                "duration": "最长 60 秒"
+            },
+            "format": {
+                "msg": "AMR 格式语音文件路径或 media_id"
+            },
+            "example": {
+                "msg": "/path/to/voice.amr"
+            }
+        },
+        "template_card": {
+            "type": "template_card",
+            "name": "模板卡片",
+            "description": "支持文本通知卡片和图文展示卡片的模板消息",
+            "required_params": ["card_type", "main_title", "card_action_type"],
+            "optional_params": [
+                "main_title_desc", "source_desc", "source_icon_url", "card_action_url",
+                "card_image_url", "card_image_aspect_ratio", "sub_title_text",
+                "emphasis_title", "emphasis_desc"
+            ],
+            "limits": {
+                "card_types": "text_notice（文本通知）或 news_notice（图文展示）",
+                "title_length": "标题最长 128 字节",
+                "aspect_ratio": "图片比例 1.25~2.25"
+            },
+            "format": {
+                "card_type": "卡片类型：text_notice 或 news_notice",
+                "main_title": "主标题",
+                "card_action_type": "动作类型：1=跳转URL，2=跳转小程序",
+                "card_action_url": "跳转链接（当 card_action_type=1 时必需）",
+                "card_image_url": "卡片图片（news_notice 类型必需）"
+            },
+            "example": {
+                "card_type": "text_notice",
+                "main_title": "重要通知",
+                "card_action_type": 1,
+                "card_action_url": "https://example.com",
+                "sub_title_text": "请及时查看"
+            }
+        }
+    }
+    
+    if message_type not in formats:
+        return {
+            "errcode": -1,
+            "errmsg": f"Unsupported message type: {message_type}. Supported types: {', '.join(formats.keys())}"
+        }
+    
+    return {
+        "errcode": 0,
+        "errmsg": "ok",
+        "format_info": formats[message_type]
+    }
+
 def run_server():
     errors = []
     if key is None:
@@ -347,7 +596,7 @@ def run_server():
         # qyweixin_notice(msg="你好，这是一条测试消息", msgtype="text")
 
         logger.info("MCP server started and ready")
-        logger.info(f"Registered tool: qyweixin_notice")
+        logger.info(f"Registered tools: qyweixin_notice, qyweixin_upload_media, qyweixin_list_message_types, qyweixin_get_message_format")
         mcp.run()
 
 
